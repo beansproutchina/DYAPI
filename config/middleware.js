@@ -1,3 +1,4 @@
+const { antiSpider } = require("../dyapi/antiSpider.middleware.js");
 const dyapi = require("../dyapi/dyapi.js");
 const jwt = require("../dyapi/jwt.js");
 const settings = require("./settings.js");
@@ -26,6 +27,7 @@ const middlewares = [
         res.header("X-Powered-By", "DYAPI")
         next()
     },
+    antiSpider
 ]
 
 module.exports = {

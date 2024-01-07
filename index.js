@@ -10,11 +10,12 @@ app.use(cookieparser());
 app.use(express.json());
 
 app.use(function (err, req, res, next) {
-    console.error(err.stack);
-    res.send({
-        code: 500,
-        message: err.message,
-    });
+    MiddlewareChain(req, res, () => {
+        res.tosend = {
+            code: 500,
+            message: err.message
+        };
+    })
 });
 
 const RefreshRoutes = () => {
@@ -41,7 +42,7 @@ const RefreshRoutes = () => {
             MiddlewareChain(req, res, () => { res.tosend = (value.Q(req.role, "update", { ...req.body, id: req.params.id })) })
         })
         app.delete(`/${settings.urlPrefix}/${key}s/:id`, (req, res) => {
-            MiddlewareChain(req, res, () => { res.tosend = (value.Q(req.role, "delete", { id: req.params.id })) })
+            MiddlewareChain(req, res, () => { res.tosend = (value.Q(req.role, "delete", (v)=>{return v.id==req.params.id })) })
         })
         app.patch(`/${settings.urlPrefix}/${key}s/:id`, (req, res) => {
             MiddlewareChain(req, res, () => { res.tosend = (value.Q(req.role, "patch", { ...req.body, id: req.params.id })) })
@@ -53,10 +54,7 @@ const RefreshRoutes = () => {
         }
     }
     app.all(`*`, (req, res) => {
-        res.send({
-            code: 400,
-            message: "未找到该操作",
-        })
+        MiddlewareChain(req, res, () => { res.tosend = { code: 400, message: "未找到该操作" } })
     })
 }
 const MiddlewareChain = (req, res, final) => {
@@ -101,7 +99,7 @@ app.listen(settings.port, () => {
     console.log(`服务器启动成功 http://localhost:${settings.port}`);
 })
 
-process.on('SIGINT', ()=>{
+process.on('SIGINT', () => {
     for (let i = 0; i < model.fileContainers.length; i++) {
         model.fileContainers[i].save();
     }
