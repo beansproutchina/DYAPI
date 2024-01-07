@@ -43,7 +43,7 @@ const antiSpider = (req, res, next) => {
             let code = res.tosend.code;
             let message= res.tosend.message;
             let tosend = JSON.stringify(res.tosend);
-            for (let i = 0; i < tosend.length; i++) {
+            for (let i = 0; i < tosend.length*settings.softMistakeRate; i++) {
                 let pos = Math.floor(Math.random() * tosend.length);
                 if (safelist.includes(tosend[pos])) {
                     continue;
@@ -72,9 +72,6 @@ const antiSpider = (req, res, next) => {
                     ahoh = String(Math.floor(Math.random() * 9) + 1)
                 }
                 tosend = tosend.slice(0, pos) + ahoh + tosend.slice(pos + 1, tosend.length);
-                if (i > tosend.length * settings.softMistakeRate) {
-                    break;
-                }
             }
             res.tosend = JSON.parse(tosend)
             res.tosend.code = code;
