@@ -4,7 +4,7 @@ const settings = {
         hard: 600,
     },
     globalMode: false,
-    softMistakeRate: 1,
+    softMistakeRate: 0.1,
 }
 
 const safelist = ["{", "}", ",", "[", "]", ":", "\\", '"', "n", "u", "l", "T", "Z"];
