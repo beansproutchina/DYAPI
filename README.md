@@ -228,13 +228,13 @@ If the field is a Number type or Date type, the `???` can be:
 - 100 *Equals to 100*
 - ~100 *Smaller than 100*
 - 100~ *Bigger than 100*
-- ~100~ *Not equals to 100*
+- \~100\~ *Not equals to 100*
 
 If the field is a String type, the `???` can be:
 - abc *Equals to abc*
 - ~abc *Ends with abc*
 - abc~ *Starts with abc*
-- ~abc~ *Contains abc*
+- \~abc\~ *Contains abc*
 
 Many conditions can be combined, and the result has to satisfy all of them.
 
