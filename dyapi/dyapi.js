@@ -1,5 +1,6 @@
 const fs = require('fs');
-const crypto=require("crypto");
+const settings = require('../config/settings');
+
 
 class fileContainer {
     #filename = "";
@@ -16,7 +17,7 @@ class fileContainer {
         }
         setTimeout(() => {
             this.save();
-        }, 60000);
+        }, settings.saveInterval);
     }
     save() {
         console.log("文件保存中")
@@ -181,16 +182,43 @@ class model {
         this.#container = container;
         this.#tablename = tablename;
     }
-    create(item) {
-        this.#container.create(this.#tablename, item);
+    create(content) {
+        for (let i of this.#datafields) {
+            if (!content[i.name]) {
+                if (i.required) {
+                    return false;
+                }else {
+                    content[i.name] = i.defaultvalue;
+                    if (i.type == DataType.Date && i.defaultvalue == null) {
+                        content[i.name] = new Date();
+                    }
+                }
+            }
+            switch (i.type) {
+                case DataType.Number:
+                    content[i.name] = Number(content[i.name]);
+                    break;
+                case DataType.String:
+                    content[i.name] = String(content[i.name]);
+                    break;
+                case DataType.Date:
+                    content[i.name] = new Date(content[i.name]);
+                    break;
+            }
+        }
+        content=Object.fromEntries(Object.entries(content).filter((x)=>this.#datafields.find((y)=>y.name==x[0])))
+        this.#container.create(this.#tablename, content);
+        return true;
     }
     read(parameters) {
         return this.#container.read(this.#tablename, parameters);
     }
     update(item) {
+        item=Object.fromEntries(Object.entries(item).filter((x)=>this.#datafields.find((y)=>y.name==x[0])))
         return this.#container.update(this.#tablename, item);
     }
     patch(item) {
+        item=Object.fromEntries(Object.entries(item).filter((x)=>this.#datafields.find((y)=>y.name==x[0])))
         return this.#container.patch(this.#tablename, item);
     }
     delete(filter) {
@@ -202,7 +230,7 @@ class model {
     }
     getPermission(usertype, permission) {
         if (!this.#permission[usertype]) {
-            return true;//默认为CRUD
+            return (this.#permission["DEFAULT"]??"C,R,U,D,").includes(permission + ",")//默认为CRUD
         }
         if(permission==null){return true};
         return this.#permission[usertype].includes(permission + ",");
@@ -263,33 +291,7 @@ class model {
             switch (operation) {
                 case "create":
                     if (this.getPermission(usertype, "C")) {
-                        for (let i of this.#datafields) {
-                            if (i.required) {
-                                if (!content[i.name]) {
-                                    return {
-                                        code: 403,
-                                        message: `缺少字段`
-                                    }
-                                }
-                            }
-                            else {
-                                content[i.name] = i.defaultvalue;
-                                if (i.type == DataType.Date && i.defaultvalue == null) {
-                                    content[i.name] = new Date();
-                                }
-                            }
-                            switch (i.type) {
-                                case DataType.Number:
-                                    content[i.name] = Number(content[i.name]);
-                                    break;
-                                case DataType.String:
-                                    content[i.name] = String(content[i.name]);
-                                    break;
-                                case DataType.Date:
-                                    content[i.name] = new Date(content[i.name]);
-                                    break;
-                            }
-                        }
+                        
                         this.create(content);
                         return {
                             code: 200,
@@ -479,7 +481,7 @@ class DataField {
         if (this.#permission[usertype]) {
             return this.#permission[usertype].includes(permission + ",");
         } else {
-            return true;//默认为r,w
+            return (this.#permission["DEFAULT"]??"r,w,").includes(permission + ",");//默认为r,w
         }
 
     }
@@ -497,29 +499,6 @@ const DataType = {
     Date: "date",
     Object: "object",
 }
-
-const Sessions=[]
-const newSession=(data,expire)=>{
-    let session={}
-    session.data=data;
-    session.token=crypto.createHash("sha1").update(Date.now()+"DYAPi"+JSON.stringify(data)).digest("hex").toLowerCase();
-    session.expire=Date.now()+expire;
-    Sessions.push(session);
-    return session.token;
-}
-const findSession=(token)=>{
-    for(let i of Sessions){
-        if(i.token==token){
-            if(Date.now()>i.expire){
-                Sessions.splice(Sessions.indexOf(i),1);
-                return null;
-            }
-            return i.data;
-        }
-    }
-    return null;
-}
-
 
 class Controller{
     url="";
@@ -542,6 +521,4 @@ module.exports = {
     DataField,
     DataType,
     Controller,
-    findSession,
-    newSession,
 }
