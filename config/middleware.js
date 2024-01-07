@@ -17,7 +17,6 @@ const middlewares = [
             }
         }
         if(b){
-            console.log(b.username)
             req.role = b.role;
         }
         next()

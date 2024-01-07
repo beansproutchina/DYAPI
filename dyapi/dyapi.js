@@ -20,7 +20,6 @@ class fileContainer {
         }, settings.saveInterval);
     }
     save() {
-        console.log("文件保存中")
         fs.writeFileSync(this.#filename, JSON.stringify(this.#data));
         console.log("文件保存完成")
     }
