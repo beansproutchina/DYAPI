@@ -9,14 +9,15 @@ const app = express();
 app.use(cookieparser());
 app.use(express.json());
 
-app.use(function (err, req, res, next) {
+/*app.use(function (err, req, res, next) {
+    console.log(err)
     MiddlewareChain(req, res, () => {
         res.tosend = {
             code: 500,
             message: err.message
         };
     })
-});
+});*/
 
 const RefreshRoutes = () => {
     app.routes = [];

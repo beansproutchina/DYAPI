@@ -57,9 +57,12 @@ const antiSpider = (req, res, next) => {
                 let ahoh;
                 if (isNaN(tosend[pos])) {
                     let code = tosend.charCodeAt(pos);
-                    if (code >= 65 && code <= 122) {
-                        //字母
-                        ahoh = String.fromCharCode(65 + Math.floor(Math.random() * 56))
+                    if (code >= 65 && code <= 90) {
+                        //大写字母
+                        ahoh = String.fromCharCode(65 + Math.floor(Math.random() * 26))
+                    }else if(code >= 97 && code <= 122){
+                        //小写字母
+                        ahoh = String.fromCharCode(97 + Math.floor(Math.random() * 26))
                     } else {
                         //其他字符
                         ahoh = String.fromCharCode(tosend.charCodeAt(pos) + Math.floor(Math.random() * 15)-5)

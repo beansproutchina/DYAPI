@@ -10,7 +10,7 @@ class fileContainer {
         if (fs.existsSync(this.#filename)) {
             try {
                 this.#data = JSON.parse(fs.readFileSync(this.#filename, 'utf8'));
-            }catch{
+            } catch {
             }
         } else {
             console.log("文件不存在");
@@ -186,7 +186,7 @@ class model {
             if (!content[i.name]) {
                 if (i.required) {
                     return false;
-                }else {
+                } else {
                     content[i.name] = i.defaultvalue;
                     if (i.type == DataType.Date && i.defaultvalue == null) {
                         content[i.name] = new Date();
@@ -205,7 +205,7 @@ class model {
                     break;
             }
         }
-        content=Object.fromEntries(Object.entries(content).filter((x)=>this.#datafields.find((y)=>y.name==x[0])))
+        content = Object.fromEntries(Object.entries(content).filter((x) => this.#datafields.find((y) => y.name == x[0])))
         this.#container.create(this.#tablename, content);
         return true;
     }
@@ -213,11 +213,11 @@ class model {
         return this.#container.read(this.#tablename, parameters);
     }
     update(item) {
-        item=Object.fromEntries(Object.entries(item).filter((x)=>this.#datafields.find((y)=>y.name==x[0])))
+        item = Object.fromEntries(Object.entries(item).filter((x) => this.#datafields.find((y) => y.name == x[0])))
         return this.#container.update(this.#tablename, item);
     }
     patch(item) {
-        item=Object.fromEntries(Object.entries(item).filter((x)=>this.#datafields.find((y)=>y.name==x[0])))
+        item = Object.fromEntries(Object.entries(item).filter((x) => this.#datafields.find((y) => y.name == x[0])))
         return this.#container.patch(this.#tablename, item);
     }
     delete(filter) {
@@ -229,13 +229,13 @@ class model {
     }
     getPermission(usertype, permission) {
         if (!this.#permission[usertype]) {
-            return (this.#permission["DEFAULT"]??"C,R,U,D,").includes(permission + ",")//默认为CRUD
+            return (this.#permission["DEFAULT"] ?? "C,R,U,D,").includes(permission + ",")//默认为CRUD
         }
-        if(permission==null){return true};
+        if (permission == null) { return true };
         return this.#permission[usertype].includes(permission + ",");
     }
     registerService(permission, operation, service) {
-        if(!isNaN(parseFloat(operation))){
+        if (!isNaN(parseFloat(operation))) {
             console.log("服务url不能是数字");
             return this;
         }
@@ -246,43 +246,44 @@ class model {
         })
         return this;
     }
-    urlFilter(field,value){
-        switch(this.#datafields.find(x=>x.name==field).type){
+    urlFilter(field, value) {
+        switch (this.#datafields.find(x => x.name == field).type) {
             case DataType.Number:
-                if(value.startsWith("~")){
-                    if(value.endsWith("~")){
-                        return (v)=>{return v[field]!=Number(value.slice(1,-1))}
-                    }else{
-                        return (v)=>{return v[field]<Number(value.slice(1))}
+                if (value.startsWith("~")) {
+                    if (value.endsWith("~")) {
+                        return (v) => { return v[field] != Number(value.slice(1, -1)) }
+                    } else {
+                        return (v) => { return v[field] < Number(value.slice(1)) }
                     }
-                }else if(value.endsWith("~")){
-                    return (v)=>{return v[field]>Number(value.slice(0,-1))}
+                } else if (value.endsWith("~")) {
+                    return (v) => { return v[field] > Number(value.slice(0, -1)) }
                 }
-                return (v)=>{return v[field]==Number(value)}
+                return (v) => { return v[field] == Number(value) }
             case DataType.Date:
-                
-                if(value.startsWith("~")){
-                    if(value.endsWith("~")){
-                        return (v)=>{return v[field]!=new Date(value.slice(1,-1))}
-                    }else{
-                        return (v)=>{return v[field]<new Date(value.slice(1))}
+
+                if (value.startsWith("~")) {
+                    if (value.endsWith("~")) {
+                        return (v) => { return v[field] != new Date(value.slice(1, -1)) }
+                    } else {
+                        return (v) => { return v[field] < new Date(value.slice(1)) }
                     }
-                }else if(value.endsWith("~")){
-                    return (v)=>{return v[field]>new Date(value.slice(0,-1))}
+                } else if (value.endsWith("~")) {
+                    return (v) => { return v[field] > new Date(value.slice(0, -1)) }
                 }
-                return (v)=>{
-                    return v[field]==new Date(value)}
+                return (v) => {
+                    return v[field] == new Date(value)
+                }
             case DataType.String:
-                if(value.startsWith("~")){
-                    if(value.endsWith("~")){
-                        return (v)=>{return v[field].includes(value.slice(1,-1))}
-                    }else{
-                        return (v)=>{return v[field].endsWith(value.slice(1))}
+                if (value.startsWith("~")) {
+                    if (value.endsWith("~")) {
+                        return (v) => { return v[field].includes(value.slice(1, -1)) }
+                    } else {
+                        return (v) => { return v[field].endsWith(value.slice(1)) }
                     }
-                }else if(value.endsWith("~")){
-                    return (v)=>{return v[field].startsWith(value.slice(0,-1))}
+                } else if (value.endsWith("~")) {
+                    return (v) => { return v[field].startsWith(value.slice(0, -1)) }
                 }
-                return (v)=>{return v[field]==value}
+                return (v) => { return v[field] == value }
         }
     }
     Q(usertype, operation, content) {
@@ -290,7 +291,7 @@ class model {
             switch (operation) {
                 case "create":
                     if (this.getPermission(usertype, "C")) {
-                        
+
                         this.create(content);
                         return {
                             code: 200,
@@ -307,7 +308,7 @@ class model {
                         if (!content || !content.fields) {
                             content.fields = this.#datafields.filter((v) => { return v.getPermission(usertype, "r") }).map((v) => { return v.name })
                         } else {
-                            if (content.find((v) => { return !content.fields.includes(v.name) || !v.getPermission(usertype, "r") })) {
+                            if (content.fields.find((v) => { return !this.#datafields.find((u) => { return u.name == v && u.getPermission(usertype, "r") }) })) {
                                 return {
                                     code: 403,
                                     message: `字段不存在或无权访问`
@@ -315,16 +316,16 @@ class model {
                             };
                         }
                         let data = this.read(content);
-                        if(content.pops && content.pops.length>0){
+                        if (content.pops && content.pops.length > 0) {
                             for (let i of content.pops) {
-                                for(let ii of data.result){
-                                    let r=i.model.Q(usertype, "read", {
+                                for (let ii of data.result) {
+                                    let r = i.model.Q(usertype, "read", {
                                         filters: [
-                                            (v)=>{return v.id== ii[i.name]}
+                                            (v) => { return v.id == ii[i.name] }
                                         ]
                                     })
-                                    if(r.total.count>0){
-                                        ii[i.name]=r.data[0];
+                                    if (r.total.count > 0) {
+                                        ii[i.name] = r.data[0];
                                     }
                                 }
                             }
@@ -386,18 +387,18 @@ class model {
                                     content[i] = new Date(content[i]);
                             }
                         }
-                        let success=false;
-                        if(operation=="update"){
-                            success=this.update(content);
-                        }else{
-                            success=this.patch(content);
+                        let success = false;
+                        if (operation == "update") {
+                            success = this.update(content);
+                        } else {
+                            success = this.patch(content);
                         }
-                        if(success){
+                        if (success) {
                             return {
                                 code: 200,
                                 message: "更新成功"
                             }
-                        }else{
+                        } else {
                             return {
                                 code: 404,
                                 message: "记录不存在，更新失败。"
@@ -434,6 +435,7 @@ class model {
                     }
             }
         } catch (e) {
+            console.error(e);
             return {
                 code: 500,
                 message: e
@@ -443,11 +445,10 @@ class model {
     }
     SetField(...dataField) {
         this.#datafields.push(...dataField);
-        
-        for (let i of this.#container.raw(this.#tablename)) {
-            for(let u of this.#datafields){
-                if(i[u.name]){
-                    switch(u.type){
+        for (let u of dataField) {
+            for (let i of this.#container.raw(this.#tablename)) {
+                if (i[u.name]) {
+                    switch (u.type) {
                         case DataType.Number:
                             i[u.name] = Number(i[u.name]);
                             break;
@@ -458,8 +459,8 @@ class model {
                             i[u.name] = new Date(i[u.name]);
                             break;
                     }
-                }else{
-                    i[u.name]=u.defaultvalue;
+                } else {
+                    i[u.name] = u.defaultvalue;
                 }
             }
         }
@@ -480,7 +481,7 @@ class DataField {
         if (this.#permission[usertype]) {
             return this.#permission[usertype].includes(permission + ",");
         } else {
-            return (this.#permission["DEFAULT"]??"r,w,").includes(permission + ",");//默认为r,w
+            return (this.#permission["DEFAULT"] ?? "r,w,").includes(permission + ",");//默认为r,w
         }
 
     }
@@ -499,17 +500,17 @@ const DataType = {
     Object: "object",
 }
 
-class Controller{
-    url="";
-    control=()=>{};
+class Controller {
+    url = "";
+    control = () => { };
     constructor(url, control) {
         this.url = url;
         this.control = control;
-        if(this.url.endsWith("s")){
+        if (this.url.endsWith("s")) {
             console.log("控制器不能以s结尾，防止与模型访问冲突。")
         }
-        if(this.url.startsWith("/")){
-            this.url=this.url.slice(1);
+        if (this.url.startsWith("/")) {
+            this.url = this.url.slice(1);
         }
     }
 }
