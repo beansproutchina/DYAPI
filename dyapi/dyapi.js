@@ -1,10 +1,13 @@
 const fs = require('fs');
 const settings = require('../config/settings');
-
+const logging = require('./logging');
+const { randomBytes } = require('crypto');
 
 class fileContainer {
     #filename = "";
     #data = {};
+    #numberId = false;
+    released = false;
     constructor(filename) {
         this.#filename = filename;
         if (fs.existsSync(this.#filename)) {
@@ -13,7 +16,7 @@ class fileContainer {
             } catch {
             }
         } else {
-            console.log("文件不存在");
+            logging.info("模型存储文件不存在，将自动创建。");
         }
         setTimeout(() => {
             this.save();
@@ -21,15 +24,23 @@ class fileContainer {
     }
     save() {
         fs.writeFileSync(this.#filename, JSON.stringify(this.#data));
-        console.log("文件保存完成")
+        logging.info("文件保存完成")
     }
     create(table, item) {
         if (this.#data[table]) {
             this.#data[table].__AI_ID++;
-            item.id = this.#data[table].__AI_ID;
+            if (this.#numberId) {
+                item.id = this.#data[table].__AI_ID;
+            }else{
+                item.id=ObjectID()
+            }
             this.#data[table].items.push(item);
         } else {
-            item.id = 0;
+            if (this.#numberId) {
+                item.id = 1;
+            }else{
+                item.id=ObjectID()
+            }
             this.#data[table] = {
                 __AI_ID: 0,
                 items: [item]
@@ -168,17 +179,21 @@ class fileContainer {
         }
         return this.#data[table].items;
     }
+    numberId(active) {
+        this.#numberId = active;
+        return this;
+    }
 
 }
 
 class model {
-    #container;
+    container;
     #tablename;
     #permission = {};
     services = [];
     #datafields/*:Array<DataField>*/ = [new DataField("id", DataType.Number, false, 0)];
     constructor(container, tablename) {
-        this.#container = container;
+        this.container = container;
         this.#tablename = tablename;
     }
     create(content) {
@@ -206,22 +221,22 @@ class model {
             }
         }
         content = Object.fromEntries(Object.entries(content).filter((x) => this.#datafields.find((y) => y.name == x[0])))
-        this.#container.create(this.#tablename, content);
+        this.container.create(this.#tablename, content);
         return true;
     }
     read(parameters) {
-        return this.#container.read(this.#tablename, parameters);
+        return this.container.read(this.#tablename, parameters);
     }
     update(item) {
         item = Object.fromEntries(Object.entries(item).filter((x) => this.#datafields.find((y) => y.name == x[0])))
-        return this.#container.update(this.#tablename, item);
+        return this.container.update(this.#tablename, item);
     }
     patch(item) {
         item = Object.fromEntries(Object.entries(item).filter((x) => this.#datafields.find((y) => y.name == x[0])))
-        return this.#container.patch(this.#tablename, item);
+        return this.container.patch(this.#tablename, item);
     }
     delete(filter) {
-        this.#container.del(this.#tablename, filter);
+        this.container.del(this.#tablename, filter);
     }
     setPermission(usertype, permission) {
         this.#permission[usertype] = permission + ",";
@@ -236,7 +251,7 @@ class model {
     }
     registerService(permission, operation, service) {
         if (!isNaN(parseFloat(operation))) {
-            console.log("服务url不能是数字");
+            logging.error("服务url不能是数字");
             return this;
         }
         this.services.push({
@@ -426,7 +441,7 @@ class model {
                 default:
                     for (let i of this.services) {
                         if (i.operation == operation && this.getPermission(usertype, i.permission)) {
-                            return i.service(this.#container, content);
+                            return i.service(this.container, content);
                         }
                     }
                     return {
@@ -435,7 +450,7 @@ class model {
                     }
             }
         } catch (e) {
-            console.error(e);
+            logging.error(e);
             return {
                 code: 500,
                 message: e
@@ -446,7 +461,7 @@ class model {
     SetField(...dataField) {
         this.#datafields.push(...dataField);
         for (let u of dataField) {
-            for (let i of this.#container.raw(this.#tablename)) {
+            for (let i of this.container.raw(this.#tablename)) {
                 if (i[u.name]) {
                     switch (u.type) {
                         case DataType.Number:
@@ -503,17 +518,27 @@ const DataType = {
 class Controller {
     url = "";
     control = () => { };
+    uses = [];
     constructor(url, control) {
         this.url = url;
         this.control = control;
         if (this.url.endsWith("s")) {
-            console.log("控制器不能以s结尾，防止与模型访问冲突。")
+            logging.error("控制器不能以s结尾，防止与模型访问冲突。")
         }
         if (this.url.startsWith("/")) {
             this.url = this.url.slice(1);
         }
     }
+    use(expressMiddleware) {
+        this.uses.push(expressMiddleware);
+        return this;
+    }
 }
+
+const ObjectID=()=>{
+    return Math.floor(new Date().getTime()/1000).toString(16)+randomBytes(8).toString("hex")
+}
+
 
 module.exports = {
     model,

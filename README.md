@@ -14,9 +14,13 @@ I don't know, and I don't care. This is only suitable for tiny projects since it
 
 # Sounds great! But how to use it?
 
-1. Download the project, or git clone it.
+1. Download the project, or git clone it, or use npx in an empty folder:
+```bash
+npx -p dyapi create
+```
 2. Run `node index`
 3. It's done!
+4. (If you want to update the project, just run `npx -p dyapi update`)
 
 Now, you can visit http://localhost:3000 (default port), and these APIs are available:
 
@@ -60,7 +64,6 @@ The data to be send will be stored in the `res.tosend` object, and you can chang
 
 I wrote 2 middlewares in `config/middlewares.js`, one for authentication and one for setting the X-Powered-By header. They are examples of how to create a middleware, and are also important functions of DYAPI.
 
-Moreover, a Antispider middleware is also included. If there are too many requests, which is more than the **SOFT** threshold, the server will randomly replace the response body, making the data useless. Haha!
 
 ## Controllers
 
@@ -176,6 +179,11 @@ The `parameters` is a JSON object with the following properties:
 - `limit` is the maximum number of results to return on this page.
 - `pops` is a list of populations to include. When a field is populated, the field will be replaced by the object in another Model whose `id` is the value of the field, and the model name is the name of the field. (*Only accessible by URL or Method Q*)
 
+the result is an object with the following properties:
+- `total`
+  - `count` for the total number of results.
+  - `pages` for the total number of pages.
+- `result` for the result list.
 
 ### update
 ```javascript
@@ -242,8 +250,36 @@ Wow! Amazing!
 
 But if you want more complex conditions, you should register a service to the model.
 
+# Log System
+
+A simple log system is integrated in DYAPI. Import `dyapi/util/logging.js` and use `trace`,`debug`,`info`,`warn`,`error` 5 log levels to log your data. The log level is controlled by the `loggingLevel` variable in `config/settings.js`.There are also `loggingFile` and `rotatingSize` variables to control the log file. If one file is larger than `rotatingSize`, a new one will be created.
+
 # Contact, etc
 
 If you have any questions, please contact me by sending issues or PRs on GitHub.
 
 Thank you again for using this library, and don't forget to give me a star if you like it!
+
+# PS - Plugins
+
+You can use plugins to extend DYAPI. I have integrated some plugins in this repository. You can find them in the `dyapi/plugins` folder. Now I'm gonna introduce them.
+
+## antiSpider
+This plugin is used to prevent the spider from accessing the API. It's enabled by default. If there are too many requests from the same IP per minute, more than the **SOFT** limit, the response data will be randomly replaced, making the data useless. Haha! If they are beyond the **HARD** limit, the IP will be blocked for a while.
+
+## fileStorage
+This plugin is used to store files uploaded by users. It's enabled by default.
+
+`POST /api/storage` with a "form-data" body which has a field named "file" will upload file to the storage folder. It needs logging in. Then it'll response like this:
+```JSON
+{
+    "code": 200,
+    "message": "上传成功",
+    "path": "api/storage/1.png"
+}
+```
+
+`GET /api/storage/1.png` will **PREVIEW** the file.
+`GET /api/storage/1.png?download` will **DOWNLOAD** the file.
+`DELETE /api/storage/1.png` will **DELETE** the file. It needs `admin` role.
+

@@ -1,7 +1,6 @@
 const dyapi=require("../dyapi/dyapi.js");
-
 const fileContainers=[
-    new dyapi.fileContainer("./files/database.json")
+    new dyapi.fileContainer("./files/database.json").numberId(false)
 ];
 const models={
     user:

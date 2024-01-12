@@ -20,4 +20,7 @@ module.exports = {
     cookieLogin: true,
     // 密码哈希函数
     passwordHash,
+    loggingLevel: "TRACE",
+    loggingFile: "./files/Log_{n}.log",
+    rotatingSize: 1024 * 1024 * 10, // 10M
 };

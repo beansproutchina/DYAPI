@@ -1,4 +1,4 @@
-const { antiSpider } = require("../dyapi/antiSpider.middleware.js");
+const { antiSpider } = require("../plugins/antiSpider.middleware.js");
 const dyapi = require("../dyapi/dyapi.js");
 const jwt = require("../dyapi/jwt.js");
 const settings = require("./settings.js");
@@ -17,16 +17,19 @@ const middlewares = [
             }
         }
         if(b){
+            req.user=b;
             req.role = b.role;
         }
         next()
     },
-    (req, res, next) => {
-        //设置响应头中间件。你最好留着。
-        res.header("X-Powered-By", "DYAPI")
-        next()
-    },
-    antiSpider
+    antiSpider({
+        requestsPerMin:{
+            soft:20,
+            hard:100,
+        },
+        globalMode:false,
+        softMistakeRate:0.1,
+    })
 ]
 
 module.exports = {

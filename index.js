@@ -6,50 +6,53 @@ const middleware = require('./config/middleware');
 const controller = require('./config/controller');
 const process = require("process");
 const app = express();
+const logging = require("./dyapi/util/logging");
+const multer = require('multer');
 app.use(cookieparser());
-app.use(express.json());
-
-/*app.use(function (err, req, res, next) {
-    console.log(err)
+app.use((req,res,next)=>{
+    res.setHeader("X-Powered-By","DYAPI");
+})
+app.use(function (err, req, res, next) {
+    logging.error(err)
     MiddlewareChain(req, res, () => {
         res.tosend = {
             code: 500,
             message: err.message
         };
     })
-});*/
+});
 
 const RefreshRoutes = () => {
     app.routes = [];
     for (let i of controller.controllers) {
-        app.all(`/${settings.urlPrefix}/${i.url}`, (req, res) => {
+        app.all(`/${settings.urlPrefix}/${i.url}`, ...i.uses, (req, res) => {
             MiddlewareChain(req, res, i.control.bind(this, req, res))
         })
     }
     for (let [key, value] of Object.entries(model.models)) {
-        app.get(`/${settings.urlPrefix}/${key}s`, (req, res) => {
+        app.get(`/${settings.urlPrefix}/${key}s`, express.json(), (req, res) => {
             req.parameter = queryProcess(value, req.query);
             MiddlewareChain(req, res, () => { res.tosend = (value.Q(req.role, "read", req.parameter)) })
         })
-        app.get(`/${settings.urlPrefix}/${key}s/:id`, (req, res) => {
+        app.get(`/${settings.urlPrefix}/${key}s/:id`, express.json(), (req, res) => {
             req.parameter = queryProcess(value, req.query);
             req.parameter.filters = [(i) => { return i.id == req.params.id }];
             MiddlewareChain(req, res, () => { res.tosend = (value.Q(req.role, "read", req.parameter)) })
         })
-        app.post(`/${settings.urlPrefix}/${key}s`, (req, res) => {
+        app.post(`/${settings.urlPrefix}/${key}s`, express.json(), (req, res) => {
             MiddlewareChain(req, res, () => { res.tosend = (value.Q(req.role, "create", req.body)) })
         })
-        app.put(`/${settings.urlPrefix}/${key}s/:id`, (req, res) => {
+        app.put(`/${settings.urlPrefix}/${key}s/:id`, express.json(), (req, res) => {
             MiddlewareChain(req, res, () => { res.tosend = (value.Q(req.role, "update", { ...req.body, id: req.params.id })) })
         })
-        app.delete(`/${settings.urlPrefix}/${key}s/:id`, (req, res) => {
-            MiddlewareChain(req, res, () => { res.tosend = (value.Q(req.role, "delete", (v)=>{return v.id==req.params.id })) })
+        app.delete(`/${settings.urlPrefix}/${key}s/:id`, express.json(), (req, res) => {
+            MiddlewareChain(req, res, () => { res.tosend = (value.Q(req.role, "delete", (v) => { return v.id == req.params.id })) })
         })
-        app.patch(`/${settings.urlPrefix}/${key}s/:id`, (req, res) => {
+        app.patch(`/${settings.urlPrefix}/${key}s/:id`, express.json(), (req, res) => {
             MiddlewareChain(req, res, () => { res.tosend = (value.Q(req.role, "patch", { ...req.body, id: req.params.id })) })
         })
         for (i of value.services) {
-            app.all(`/${settings.urlPrefix}/${key}s/${i.operation}`, (req, res) => {
+            app.all(`/${settings.urlPrefix}/${key}s/${i.operation}`, express.json(), (req, res) => {
                 MiddlewareChain(req, res, () => { res.tosend = (value.Q(req.role, i.operation, req.body)) })
             })
         }
@@ -63,7 +66,9 @@ const MiddlewareChain = (req, res, final) => {
         final = i.bind(this, req, res, final);
     }
     final();
-    res.send(res.tosend)
+    if (res.tosend) {
+        res.send(res.tosend)
+    }
 }
 const queryProcess = (model, query) => {
     let parameter = {
@@ -97,13 +102,21 @@ const queryProcess = (model, query) => {
 RefreshRoutes();
 
 app.listen(settings.port, () => {
-    console.log(`服务器启动成功 http://localhost:${settings.port}`);
+    logging.info(`服务器启动成功 http://localhost:${settings.port}`);
 })
 
+/*app.use(`/api/storage`,multer({
+    dest: "./files/uploads",
+}).single("file"))
+*/
 process.on('SIGINT', () => {
-    for (let i = 0; i < model.fileContainers.length; i++) {
-        model.fileContainers[i].save();
+    for (let [key, i] of Object.entries(model.models)) {
+        if (!i.container.released) {
+            i.container.released = true;
+            i.container.save()
+        }
     }
+
     process.exit(0);
 });
 

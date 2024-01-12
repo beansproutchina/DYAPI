@@ -1,7 +1,9 @@
 const dyapi=require("../dyapi/dyapi.js");
-const jwt=require("../dyapi/jwt.js");
 const model=require("./model.js");
+const { CFileStorage } = require("../plugins/fileStorage.controller.js");
+const jwt=require("../dyapi/util/jwt.js");
 const settings = require("./settings.js");
+const express=require("express");
 
 
 const controllers=[
@@ -31,7 +33,7 @@ const controllers=[
                 }
             }
         }
-    }),
+    }).use(express.json()),
     new dyapi.Controller("reg",(req,res)=>{
         if(req.body.username==null || req.body.password==null){
             res.tosend={
@@ -58,7 +60,8 @@ const controllers=[
                 }
             }
         }
-    }),
+    }).use(express.json()),
+    ...CFileStorage()
 ]
 
 module.exports={
